@@ -12,7 +12,7 @@ public class Client
     {
 
         Client client = new Client();
-        Scanner scan= new Scanner(System.in);
+        Scanner scan= new Scanner(System.in).useDelimiter("\n");
         while (true){
             System.out.print("Enter\n1. Login\n2. Student Register\n3. Exit\n");
             int choice = scan.nextInt();
@@ -28,7 +28,7 @@ public class Client
     }
 
     public void registerStudent() throws Exception{
-        Scanner scan= new Scanner(System.in).useDelimiter("\n");;
+        Scanner scan= new Scanner(System.in).useDelimiter("\n");
         System.out.println("Enter Username");
         String username=scan.next();
         System.out.println("Enter Password");
@@ -40,7 +40,7 @@ public class Client
         SimpleDateFormat DateFor = new SimpleDateFormat("yyyy-MM-dd");
         String dobString = null;
         while (true){
-            System.out.println("Enter dob (yyyy-MM-dd)");
+            System.out.println("Enter dob (1994-01-02 - This format)");
             dobString = scan.next();
             try{
                 DateFor.parse(dobString);
@@ -71,28 +71,26 @@ public class Client
 
     public void login() throws Exception {
         try{
-            Scanner scan= new Scanner(System.in);
+            Scanner scan= new Scanner(System.in).useDelimiter("\n");
             System.out.println("Enter Username");
             String username=scan.next();
             System.out.println("Enter Password");
             String password=scan.next();
+            System.out.println("----------------------------------------------------------------");
             RMIInterface obj=(RMIInterface)Naming.lookup("sis");
             Map result = obj.login(username, password);
-            System.out.println(result);
             if(result.size() > 1){
-                System.out.println("Logged In Successfully.");
+                System.out.println("Logged In Successfully. Welcome "+result.get("username")+"\n");
+                System.out.println("----------------------------------------------------------------");
                 String role = (String) result.get("role");
-                System.out.println("You are a: "+role);
                 if(role.equals("student")){
-                    System.out.println("You are a student...... Now show student screen.");
+                    this.studentScreen(result);
                 }else if(role.equals("admin")){
-                    System.out.println("Inside admin panel...");
                     this.adminScreen();
-                }else if(role.equals("staff")){
-
                 }
             }else{
                 System.out.println("Login Failed......");
+                System.out.println("--------------------------------");
             }
         }catch (Exception ex){
             System.out.println("*********ERROR: "+ex.getMessage());
@@ -100,62 +98,51 @@ public class Client
     }
 
     public void adminScreen() throws Exception {
-        Scanner scan= new Scanner(System.in);
+        Scanner scan= new Scanner(System.in).useDelimiter("\n");
         while (true){
-            System.out.print("Enter\n1. Create User\n2. Student List\n3. Exit\n");
+            System.out.print("Enter\n1. Create User\n2. Student List\n3. Bus Schedule\n4. Course List\n5. Holidays\n" +
+                    "6. Add Holiday\n7. Add Fee\n8. Exit\n");
             int choice = scan.nextInt();
             if(choice == 1){
-                this.createUser();
+                Helper.createUser();
             }else if (choice == 2){
-                this.showStudents();
+                Helper.showStudents();
             }else if (choice == 3){
+                Helper.busSchedule();
+            }else if (choice == 4){
+                Helper.courseDetails("admin");
+            }else if (choice == 5){
+                Helper.holidays();
+            }else if (choice == 6){
+                Helper.addHoliday();
+            }else if (choice == 7){
+                Helper.addFee();
+            }else if (choice == 8){
                 System.out.print("BYE.......");
                 break;
             }
         }
     }
 
-    public void createUser() throws Exception {
-        try{
-            Scanner scan= new Scanner(System.in);
-            List roleList = new ArrayList();
-            roleList.add("admin");
-            roleList.add("staff");
-            System.out.println("Enter Username");
-            String username=scan.next();
-            System.out.println("Enter Password");
-            String password=scan.next();
-            String role = "";
-            while (true){
-                System.out.println("Enter Role");
-                role=scan.next();
-                if(roleList.contains(role)){
-                    break;
-                }else{
-                    System.out.println("Role should be either admin or staff.");
-                }
+    public void studentScreen(Map result) throws Exception {
+        Scanner scan= new Scanner(System.in).useDelimiter("\n");
+        while (true){
+            System.out.print("Enter\n1. Course Details\n2. Bus Schedule\n3. Upcoming Fee\n4. Holidays\n5. My Info\n6. Exit\n");
+            int choice = scan.nextInt();
+            if(choice == 1){
+                Helper.courseDetails((String) result.get("course"));
+            }else if (choice == 2){
+                Helper.busSchedule();
+            }else if (choice == 3){
+                Helper.feeDetails(Integer.parseInt(String.valueOf(result.get("studentId"))));
+            }else if (choice == 4){
+                Helper.holidays();
+            }else if (choice == 5){
+                Helper.myInfo(result);
+            }else if (choice == 6){
+                System.out.print("BYE.......");
+                break;
             }
-            RMIInterface obj=(RMIInterface)Naming.lookup("sis");
-            Map result = obj.createUser(username, password, role);
-            if(result.size() > 1){
-                System.out.println("User created successfully.");
-                System.out.println(result);
-            }
-        }catch (Exception ex){
-            System.out.println("*********ERROR: "+ex.getMessage());
-        }
-    }
-
-    public void showStudents() {
-        try{
-            System.out.println("----------Student List----------");
-            RMIInterface obj=(RMIInterface)Naming.lookup("sis");
-            List<Map> result = obj.studentList();
-            for(Map row: result){
-                System.out.println(row);
-            }
-        }catch (Exception ex){
-            System.out.println("*********ERROR: "+ex.getMessage());
         }
     }
 }

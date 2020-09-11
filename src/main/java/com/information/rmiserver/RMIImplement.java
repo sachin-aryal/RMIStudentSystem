@@ -16,7 +16,6 @@ public class RMIImplement extends UnicastRemoteObject implements RMIInterface {
 
     public RMIImplement() throws Exception {
         super();
-        Class.forName("com.mysql.jdbc.Driver");
         this.con=DriverManager.getConnection(DB_URL,DB_USER,DB_PASS);
     }
 
@@ -46,6 +45,17 @@ public class RMIImplement extends UnicastRemoteObject implements RMIInterface {
             result.put("username", username);
             result.put("userId", rs.getString("id"));
             result.put("role", rs.getString("role"));
+        }
+        if(((String) result.get("role")).equals("student")){
+            sql = "SELECT * FROM students WHERE user_id="+result.get("userId");
+            rs = getStatement().executeQuery(sql);
+            while (rs.next()) {
+                result.put("studentId", rs.getInt("id"));
+                result.put("name", rs.getString("name"));
+                result.put("tpNumber", rs.getString("tpNumber"));
+                result.put("dob", rs.getString("dob"));
+                result.put("course", rs.getString("course"));
+            }
         }
         return result;
     }
@@ -80,5 +90,93 @@ public class RMIImplement extends UnicastRemoteObject implements RMIInterface {
             studentList.add(result);
         }
         return studentList;
+    }
+
+    @Override
+    public List<Map> courseDetails(String course) throws Exception {
+        List courseDetailList = new ArrayList();
+        String sql = "";
+        if(course.equals("admin")){
+            sql = "SELECT * from course_details";
+        }else{
+            sql = "SELECT * from course_details WHERE course = '"+course+"'";
+        }
+        sql += " ORDER BY semester";
+        ResultSet rs = getStatement().executeQuery(sql);
+        while (rs.next()) {
+            Map result = new HashMap();
+            result.put("course", rs.getString("course"));
+            result.put("subject", rs.getString("subject"));
+            result.put("semester", rs.getInt("semester"));
+            courseDetailList.add(result);
+        }
+        return courseDetailList;
+    }
+
+    @Override
+    public List<Map> busSchedule() throws Exception {
+        List busScheduleList = new ArrayList();
+        String sql = "SELECT * FROM sis.bus_schedule;";
+        ResultSet rs = getStatement().executeQuery(sql);
+        while (rs.next()) {
+            Map result = new HashMap();
+            result.put("from", rs.getString("from"));
+            result.put("to", rs.getString("to"));
+            result.put("time", rs.getString("time"));
+            busScheduleList.add(result);
+        }
+        return busScheduleList;
+    }
+
+    @Override
+    public List<Map> feeDetails(int studentId) throws Exception {
+        List feeDetailList = new ArrayList();
+        String sql = "SELECT * FROM sis.fee WHERE student_id = "+studentId+"";
+        ResultSet rs = getStatement().executeQuery(sql);
+        while (rs.next()) {
+            Map result = new HashMap();
+            result.put("fee_amount", rs.getString("fee_amount"));
+            result.put("due_date", rs.getString("due_date"));
+            feeDetailList.add(result);
+        }
+        return feeDetailList;
+    }
+
+    @Override
+    public List<Map> holidays() throws Exception {
+        List holidayList = new ArrayList();
+        String sql = "SELECT * FROM sis.holidays WHERE holiday_date >= CURDATE() ORDER BY holiday_date ASC";
+        ResultSet rs = getStatement().executeQuery(sql);
+        while (rs.next()) {
+            Map result = new HashMap();
+            result.put("title", rs.getString("title"));
+            result.put("holiday_date", rs.getString("holiday_date"));
+            holidayList.add(result);
+        }
+        return holidayList;
+    }
+
+    @Override
+    public boolean addHoliday(String title, String holiday_date) throws Exception {
+        Statement stmt = this.con.createStatement();
+        stmt.executeUpdate("insert into holidays values(null , '"+title+"','"+holiday_date+"')", Statement.RETURN_GENERATED_KEYS);
+        ResultSet rs = stmt.getGeneratedKeys();
+        if (rs.next())
+        {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean addFee(int studentId, int amount, String due_date) throws Exception {
+        Statement stmt = this.con.createStatement();
+        stmt.executeUpdate("insert into fee values(null , "+studentId+","+amount+", '"+due_date+"')", Statement.RETURN_GENERATED_KEYS);
+        ResultSet rs = stmt.getGeneratedKeys();
+        if (rs.next())
+        {
+            return true;
+        }
+        return false;
     }
 }
